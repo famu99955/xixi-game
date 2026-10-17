@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>熙熙的观测世界线 · CHRONICLE OF XIXI</title>
+<style>
+@import url("https://fontsapi.zeoseven.com/157/main/result.css");
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+body, button, input, select, textarea {
+    font-family: "PING FANG SHAO HUA", "Hiragino Mincho ProN", "Noto Serif SC", serif;
+    font-weight: normal;
+}
+
+body {
+    background: #060408;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    color: #fff8ee;
+}
+
+/* ================= 16:9 标准横屏 Galgame 舞台 ================= */
+#stage {
+    position: relative;
+    width: 100vw;
+    height: 56.25vw;
+    max-height: 100vh;
+    max-width: 177.78vh;
+    background: #140d16;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.95);
+}
+
+/* 底层动态插画保底画布（当本地图片未同目录放置时自动渲染精美场景） */
+#fallback-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* 4阶段默认CG图层 */
+#bg-cg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 18%;
+    z-index: 2;
+    transition: opacity 0.45s ease, transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), filter 0.4s ease;
+}
+
+/* 飘落樱花/星尘/彼岸花粒子层 */
+#particle-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* CRT扫描线与暗角滤镜 */
+#fx-vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 6;
+    background: radial-gradient(circle at 50% 45%, transparent 50%, rgba(12, 6, 10, 0.55) 100%);
+    transition: background 0.45s ease;
+}
+
+#fx-scan {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 7;
+    opacity: 0;
+    background:
+        repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.38) 0px, rgba(0, 0, 0, 0.38) 2px, transparent 2px, transparent 4px),
+        linear-gradient(90deg, rgba(255, 0, 45, 0.07), rgba(0, 255, 160, 0.02), rgba(0, 140, 255, 0.07));
+    transition: opacity 0.35s ease;
+}
+
+/* 精神污染红色颤抖弹幕层 */
+#haunt-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 16;
+    overflow: hidden;
+}
+
+.haunt-word {
+    position: absolute;
+    color: #ff1a3c;
+    font-weight: normal;
+    letter-spacing: 3px;
+    text-shadow: 0 0 12px rgba(255, 0, 40, 0.95), 2px 2px 0 #1a0004, -1px 0 0 #00ffff;
+    white-space: nowrap;
+    animation: hauntFloat 2.4s ease-out forwards;
+}
+
+@keyframes hauntFloat {
+    0% { opacity: 0; transform: scale(0.8) translateY(8px); }
+    18% { opacity: 0.96; transform: scale(1.03) translateY(0); }
+    82% { opacity: 0.9; transform: scale(1) translateY(-6px); }
+    100% { opacity: 0; transform: scale(1.12) translateY(-14px); }
+}
+
+/* ================= 角色中央互动触摸区（摸摸头/戳一戳） ================= */
+#touch-zone {
+    position: absolute;
+    top: 13%;
+    left: 33%;
+    width: 34%;
+    height: 54%;
+    z-index: 11;
+    cursor: pointer;
+}
+
+.float-heart {
+    position: absolute;
+    pointer-events: none;
+    z-index: 25;
+    font-size: clamp(16px, 2.2vw, 28px);
+    color: #ffccd5;
+    text-shadow: 0 2px 8px rgba(255, 40, 90, 0.85);
+    animation: riseHeart 1.2s ease-out forwards;
+}
+
+@keyframes riseHeart {
+    0% { opacity: 1; transform: translateY(0) scale(0.7) rotate(-8deg); }
+    50% { opacity: 1; transform: translateY(-28px) scale(1.15) rotate(8deg); }
+    100% { opacity: 0; transform: translateY(-56px) scale(0.95) rotate(-5deg); }
+}
+
+/* ================= 修复后的顶部暖金工具栏（弹性布局绝不遮挡） ================= */
+#topbar {
+    position: absolute;
+    top: 2.2%;
+    left: 0;
+    right: 0;
+    min-height: 36px;
+    padding: 4px 3%;
+    background: linear-gradient(90deg, rgba(255, 248, 235, 0.25) 0%, rgba(255, 246, 228, 0.86) 12%, rgba(255, 246, 228, 0.86) 88%, rgba(255, 248, 235, 0.25) 100%);
+    border-top: 1px solid rgba(255, 255, 255, 0.75);
+    border-bottom: 1px solid rgba(120, 82, 38, 0.45);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    z-index: 30;
+    transition: transform 0.35s ease, opacity 0.35s ease, background 0.4s ease;
+}
+
+.top-left-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+}
+
+.status-pill {
+    font-size: clamp(10px, 1.05vw, 13px);
+    color: #462808;
+    background: rgba(255, 250, 238, 0.88);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #8c6230;
+    white-space: nowrap;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.status-pill.love-pill {
+    color: #8a1c36;
+    border-color: #b85d72;
+    background: rgba(255, 240, 244, 0.9);
+}
+
+.status-pill.corrupt-pill {
+    color: #5c1320;
+    border-color: #963848;
+    background: rgba(248, 232, 236, 0.9);
+}
+
+.top-right-btns {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.tbtn {
+    width: clamp(24px, 2.4vw, 31px);
+    height: clamp(24px, 2.4vw, 31px);
+    border-radius: 4px;
+    border: 1.5px solid #6e4920;
+    background: linear-gradient(180deg, #fbf0cc 0%, #dfb568 100%);
+    color: #422506;
+    font-size: clamp(11px, 1.15vw, 14px);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.tbtn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+.tbtn:active {
+    transform: translateY(1px);
+}
+
+/* ================= 居中Galgame选项按钮区 ================= */
+#choices {
+    position: absolute;
+    top: 46%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: none;
+    gap: clamp(16px, 2.6vw, 34px);
+    align-items: center;
+    justify-content: center;
+    z-index: 22;
+}
+
+.cbtn {
+    min-width: clamp(128px, 14vw, 180px);
+    padding: clamp(7px, 0.85vw, 11px) clamp(18px, 2.2vw, 30px);
+    font-size: clamp(14px, 1.45vw, 19px);
+    letter-spacing: 2px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.28s cubic-bezier(0.22, 1.35, 0.36, 1), filter 0.2s, box-shadow 0.25s, opacity 0.25s;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+}
+
+#btn-yes {
+    background: linear-gradient(180deg, #fff9eb 0%, #f4dca6 52%, #dfb970 100%);
+    border: 2px solid #6e461b;
+    color: #3d2104;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+#btn-yes:hover {
+    filter: brightness(1.06);
+    box-shadow: 0 0 22px rgba(255, 224, 155, 0.85);
+}
+
+#btn-no {
+    background: linear-gradient(180deg, rgba(48, 42, 50, 0.9) 0%, rgba(24, 20, 26, 0.95) 100%);
+    border: 1.5px solid rgba(215, 195, 175, 0.65);
+    color: #efe6dc;
+}
+
+#btn-no:hover {
+    filter: brightness(1.15);
+}
+
+/* ================= 底部Galgame渐变字幕框（修复字体重影与右下角重叠） ================= */
+#dlg-wrap {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 33%;
+    background: linear-gradient(to top, rgba(22, 14, 18, 0.92) 0%, rgba(32, 20, 25, 0.72) 66%, rgba(32, 20, 25, 0) 100%);
+    z-index: 20;
+    /* 右侧留出充足间距，绝不与右下角收起按钮重叠 */
+    padding: 1.8% 15% 2.2% 9%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    cursor: pointer;
+    transition: transform 0.38s ease, opacity 0.38s ease, background 0.45s ease;
+}
+
+#dlg-wrap.collapsed {
+    transform: translateY(88%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.dlg-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 5px;
+    border-bottom: 1px solid rgba(255, 232, 190, 0.25);
+    padding-bottom: 4px;
+}
+
+.speaker-group {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+#char-name {
+    font-size: clamp(17px, 1.85vw, 25px);
+    color: #ffefd2;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.95), 0 0 10px rgba(225, 160, 80, 0.4);
+}
+
+#chapter-tag {
+    font-size: clamp(11px, 1.05vw, 14px);
+    color: #f3c6cfd9;
+    letter-spacing: 1.5px;
+}
+
+#dlg-hint {
+    font-size: clamp(11px, 1vw, 13px);
+    color: #f5deb3;
+    opacity: 0.85;
+    letter-spacing: 1px;
+    animation: pulse 1.6s infinite;
+}
+
+#dlg-text {
+    font-size: clamp(15px, 1.55vw, 22px);
+    line-height: 1.72;
+    color: #fffaf2;
+    min-height: 3.3em;
+    letter-spacing: 1.2px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.6);
+}
+
+/* 右下角独立展开/收起按钮 */
+#toggle-ui {
+    position: absolute;
+    right: 2%;
+    bottom: 2.5%;
+    z-index: 28;
+    padding: 5px 12px;
+    font-size: clamp(11px, 1.05vw, 13px);
+    border-radius: 5px;
+    border: 1.5px solid #754c21;
+    background: linear-gradient(180deg, #fff6df 0%, #e5c17d 100%);
+    color: #3d2104;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+#toggle-ui:hover {
+    filter: brightness(1.08);
+}
+
+/* ================= 开始界面 (START SCREEN) ================= */
+#start-screen {
+    position: absolute;
+    inset: 0;
+    z-index: 35;
+    background: radial-gradient(circle at 72% 40%, rgba(25, 12, 22, 0.25) 0%, rgba(12, 6, 14, 0.84) 75%);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 5% 7%;
+    transition: opacity 0.5s ease;
+}
+
+.title-brand {
+    max-width: 62%;
+    margin-top: 2%;
+}
+
+.title-badge {
+    display: inline-block;
+    padding: 3px 12px;
+    border-radius: 99px;
+    background: rgba(255, 240, 215, 0.16);
+    border: 1px solid rgba(255, 225, 170, 0.55);
+    color: #fce2b6;
+    font-size: clamp(10px, 1vw, 13px);
+    letter-spacing: 3px;
+    margin-bottom: 10px;
+}
+
+.main-title {
+    font-size: clamp(28px, 4.2vw, 58px);
+    color: #fff8ec;
+    letter-spacing: 5px;
+    text-shadow: 0 4px 18px rgba(0, 0, 0, 0.9), 0 0 28px rgba(255, 160, 185, 0.45);
+    margin-bottom: 8px;
+}
+
+.sub-title {
+    font-size: clamp(13px, 1.35vw, 19px);
+    color: #ffd9e2;
+    letter-spacing: 2.5px;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.9);
+}
+
+.start-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: clamp(8px, 1.1vw, 14px);
+    margin-bottom: 1%;
+}
+
+.menu-btn {
+    min-width: clamp(220px, 25vw, 330px);
+    padding: clamp(8px, 1vw, 13px) 22px;
+    border-radius: 6px;
+    border: 1.5px solid rgba(245, 212, 150, 0.75);
+    background: linear-gradient(90deg, rgba(36, 20, 28, 0.9) 0%, rgba(68, 30, 44, 0.78) 100%);
+    color: #fff6e6;
+    font-size: clamp(14px, 1.4vw, 19px);
+    letter-spacing: 2.5px;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+    transition: transform 0.2s ease, background 0.25s ease, border-color 0.25s ease;
+}
+
+.menu-btn:hover {
+    transform: translateX(8px);
+    border-color: #fff0c2;
+    background: linear-gradient(90deg, rgba(135, 38, 62, 0.92) 0%, rgba(75, 24, 42, 0.85) 100%);
+}
+
+.menu-btn.primary-dl {
+    background: linear-gradient(90deg, rgba(115, 72, 24, 0.92) 0%, rgba(70, 42, 12, 0.85) 100%);
+    border-color: #ffd88a;
+}
+
+.start-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: clamp(11px, 1vw, 13px);
+    color: rgba(255, 240, 225, 0.75);
+    border-top: 1px solid rgba(255, 235, 205, 0.2);
+    padding-top: 8px;
+}
+
+/* ================= 结局结算叠层 (GOOD END / BAD END) ================= */
+#ending-card {
+    position: absolute;
+    top: 13%;
+    right: 4%;
+    width: clamp(260px, 34%, 420px);
+    background: rgba(18, 10, 16, 0.88);
+    border: 2px solid #e6c27a;
+    border-radius: 10px;
+    padding: 3% 3.5%;
+    z-index: 26;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.85);
+}
+
+#ending-card.bad-card {
+    background: rgba(28, 0, 6, 0.92);
+    border-color: #ff1e42;
+    box-shadow: 0 0 40px rgba(255, 0, 45, 0.55);
+}
+
+/* ================= 通用弹窗（履历 / 结局档案 / 下载与CG打包） ================= */
+.modal {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 6, 12, 0.84);
+    backdrop-filter: blur(8px);
+    z-index: 50;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 3%;
+}
+
+.modal-box {
+    width: 86%;
+    max-width: 680px;
+    max-height: 86%;
+    background: #fffaf2;
+    border: 2px solid #754c21;
+    border-radius: 10px;
+    padding: 18px 22px;
+    color: #38200a;
+    overflow-y: auto;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75);
+}
+
+.modal-box h3 {
+    font-size: clamp(16px, 1.6vw, 21px);
+    margin-bottom: 12px;
+    border-bottom: 1px solid #dec49a;
+    padding-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.close-x {
+    padding: 2px 10px;
+    border-radius: 4px;
+    border: 1px solid #8c6230;
+    background: #f5e2be;
+    color: #38200a;
+    cursor: pointer;
+}
+
+/* ================= 电子恐怖阶段样式覆盖 ================= */
+.horror-1 #dlg-wrap {
+    background: linear-gradient(to top, rgba(18, 12, 22, 0.95) 0%, rgba(25, 18, 30, 0.72) 66%, transparent 100%);
+}
+
+.horror-2 #topbar {
+    background: linear-gradient(90deg, rgba(40, 0, 8, 0.4) 0%, rgba(65, 0, 12, 0.9) 20%, rgba(65, 0, 12, 0.9) 80%, rgba(40, 0, 8, 0.4) 100%);
+    border-color: #ff1e42;
+}
+
+.horror-2 .status-pill {
+    background: #2b0006;
+    color: #ff4d6a;
+    border-color: #ff1e42;
+}
+
+.horror-2 #dlg-wrap {
+    background: linear-gradient(to top, rgba(38, 0, 6, 0.96) 0%, rgba(24, 0, 4, 0.78) 68%, transparent 100%);
+}
+
+.horror-2 #char-name, .horror-2 #dlg-text {
+    color: #ffdce2;
+    text-shadow: 2px 0 1px rgba(255, 0, 45, 0.9), -2px 0 1px rgba(0, 255, 255, 0.75), 0 2px 6px #000;
+}
+
+.horror-2 #btn-yes {
+    background: linear-gradient(180deg, #b8001f 0%, #52000c 100%);
+    border-color: #ff4d6a;
+    color: #ffffff;
+    text-shadow: 0 0 10px #ff0033;
+    box-shadow: 0 0 35px rgba(255, 0, 45, 0.85);
+}
+
+.shake-light { animation: shk 0.24s infinite; }
+.shake-hard { animation: shkHard 0.08s infinite; }
+
+@keyframes shk {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(-2px, 1.5px); }
+    50% { transform: translate(2px, -1.5px); }
+    75% { transform: translate(-1.5px, -2px); }
+}
+
+@keyframes shkHard {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    20% { transform: translate(-5px, 3px) rotate(-0.6deg) scale(1.01); }
+    40% { transform: translate(5px, -4px) rotate(0.6deg); }
+    60% { transform: translate(-6px, -2px) rotate(-0.4deg) scale(1.01); }
+    80% { transform: translate(4px, 4px) rotate(0.5deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<div id="stage">
+    <!-- 1. 动态保底艺术插画背景 Canvas（即使未放本地图片也有唯美画面） -->
+    <canvas id="fallback-canvas"></canvas>
+
+    <!-- 2. 默认 4 阶段 CG 图层 -->
+    <img id="bg-cg" src="1792229993067.jpeg" alt="Xixi CG" onerror="this.style.opacity='0'">
+
+    <!-- 3. 粒子特效层（樱花 / 星尘 / 齿轮 / 彼岸花雨） -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- 4. 电影级暗角与 CRT 故障扫描线 -->
+    <div id="fx-vignette"></div>
+    <div id="fx-scan"></div>
+
+    <!-- 5. 红色精神污染颤抖文字层 -->
+    <div id="haunt-layer"></div>
+
+    <!-- 6. 角色中央摸摸头互动区 -->
+    <div id="touch-zone" title="点击摸摸熙熙的头 ♡" onclick="patXixi(event)"></div>
+
+    <!-- 7. 修复遮挡后的顶部 Galgame 工具栏 -->
+    <header id="topbar">
+        <div class="top-left-status">
+            <span class="status-pill" id="time-pill">WORLDLINE 1.048596 | 00:00.00</span>
+            <span class="status-pill love-pill" id="love-pill">♥ 羁绊 100%</span>
+            <span class="status-pill corrupt-pill" id="corrupt-pill">👁 侵蚀 0</span>
+        </div>
+        <div class="top-right-btns">
+            <button class="tbtn" title="摸摸熙熙的头 (互动加好感)" onclick="patXixi(event)">🖐️</button>
+            <button class="tbtn" title="收起/展开对话框" onclick="toggleDlg()">▼</button>
+            <button class="tbtn" title="上一幕" onclick="prevScene()">▲</button>
+            <button class="tbtn" title="快进/下一句" onclick="advanceDialogue()">⏩</button>
+            <button class="tbtn" title="开关音效" id="mute-btn" onclick="toggleAudio()">🔊</button>
+            <button class="tbtn" title="对话履历 (LOG)" onclick="openLog()">📖</button>
+            <button class="tbtn" title="一键下载HTML文件 / 嵌入4张CG" onclick="openPacker()">📥</button>
+            <button class="tbtn" title="返回开始标题界面" onclick="showStartScreen()">🏠</button>
+        </div>
+    </header>
+
+    <!-- 8. 抉择按钮区 -->
+    <div id="choices">
+        <button class="cbtn" id="btn-yes" onclick="chooseYes()">喜欢熙熙</button>
+        <button class="cbtn" id="btn-no" onclick="chooseNo()">不喜欢</button>
+    </div>
+
+    <!-- 9. 结局证书结算浮窗 -->
+    <div id="ending-card">
+        <div id="end-badge" style="font-size:12px;letter-spacing:2px;color:#ffd88a">ENDING UNLOCKED</div>
+        <div id="end-title" style="font-size:clamp(18px,2vw,26px);color:#fff"></div>
+        <div id="end-desc" style="font-size:clamp(12px,1.15vw,15px);line-height:1.65;color:#f2e2d2"></div>
+        <div id="end-stats" style="font-size:12px;color:#f5c6d0;border-top:1px dashed rgba(255,255,255,0.25);padding-top:8px"></div>
+        <div style="display:flex;gap:10px;margin-top:4px">
+            <button class="cbtn" style="flex:1;min-width:0;padding:7px 10px;font-size:14px;background:#f4dca6;color:#3d2104" onclick="startNewGame()">🔄 重新观测</button>
+            <button class="cbtn" style="flex:1;min-width:0;padding:7px 10px;font-size:14px" onclick="showStartScreen()">🏠 返回标题</button>
+        </div>
+    </div>
+
+    <!-- 10. 底部无框描边渐变对话框 -->
+    <section id="dlg-wrap" onclick="onDlgClick()">
+        <div class="dlg-header">
+            <div class="speaker-group">
+                <span id="char-name">熙熙</span>
+                <span id="chapter-tag">第一幕 · 放学后的琥珀夕阳</span>
+            </div>
+            <span id="dlg-hint">▼ 点击继续剧情</span>
+        </div>
+        <div id="dlg-text"></div>
+    </section>
+
+    <button id="toggle-ui" onclick="toggleDlg()">▼ 收起对话</button>
+
+    <!-- 11. 开始标题画面 (START SCREEN) -->
+    <div id="start-screen">
+        <div class="title-brand">
+            <div class="title-badge">VISUAL NOVEL // ANALOG HORROR EDITION</div>
+            <h1 class="main-title">熙熙的观测世界线</h1>
+            <p class="sub-title">——「无论时间坍缩多少次，最终的选项只有我 ♡」</p>
+        </div>
+
+        <div class="start-menu">
+            <button class="menu-btn" onclick="startNewGame()">
+                <span>▶ 开始观测 · START STORY</span>
+                <span style="font-size:12px;opacity:0.75">CHAPTER I - V</span>
+            </button>
+            <button class="menu-btn" onclick="openEndingsModal()">
+                <span>🏆 结局档案馆 · ENDINGS</span>
+                <span id="end-unlock-count" style="font-size:12px;color:#ffd88a">已解锁 0 / 2</span>
+            </button>
+            <button class="menu-btn primary-dl" onclick="openPacker()">
+                <span>📥 一键下载网页文件 (.html) / 嵌入CG</span>
+                <span style="font-size:12px;color:#ffe6a3">免复制代码</span>
+            </button>
+        </div>
+
+        <div class="start-footer">
+            <span>✨ 玩法提示：剧情中可随时点击画面中央【摸摸熙熙的头】触发隐藏语音与好感互动</span>
+            <span>双结局系统：纯爱星夜 GOOD END / 彼岸深渊 BAD END</span>
+        </div>
+    </div>
+
+    <!-- 12. 履历弹窗 (LOG) -->
+    <div class="modal" id="log-modal" onclick="this.style.display='none'">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h3>
+                <span>📖 观测履历 (DIALOGUE LOG)</span>
+                <button class="close-x" onclick="document.getElementById('log-modal').style.display='none'">✖ 关闭</button>
+            </h3>
+            <div id="log-list" style="font-size:14px;line-height:1.8"></div>
+        </div>
+    </div>
+
+    <!-- 13. 结局档案馆弹窗 -->
+    <div class="modal" id="endings-modal" onclick="this.style.display='none'">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h3>
+                <span>🏆 世界线结局档案馆 (ENDINGS ARCHIVE)</span>
+                <button class="close-x" onclick="document.getElementById('endings-modal').style.display='none'">✖ 关闭</button>
+            </h3>
+            <div id="endings-grid" style="display:grid;gap:12px;font-size:14px;line-height:1.7"></div>
+        </div>
+    </div>
+
+    <!-- 14. 免复制一键下载 HTML 文件 & 本地CG嵌入工具 -->
+    <div class="modal" id="pack-modal" onclick="this.style.display='none'">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <h3>
+                <span>📥 一键下载游戏文件 (.html) · 免手动复制代码</span>
+                <button class="close-x" onclick="document.getElementById('pack-modal').style.display='none'">✖ 关闭</button>
+            </h3>
+            <p style="font-size:14px;line-height:1.65;margin-bottom:12px;background:#f7ebd4;padding:10px 12px;border-radius:6px;border:1px solid #d4b27a">
+                💡 <b>不用复制长代码！</b>直接点击下方金色按钮，浏览器就会立刻把这个游戏下载成一个独立的 <code>xixi-galgame.html</code> 文件。<br>
+                如果你把下方 4 张图片选入后再点下载，4 张高清 CG 会直接<b>永久打包进同一个 HTML 文件里</b>，发给同学点开就能直接看全套高清大图！
+            </p>
+            <div style="display:grid;gap:8px;font-size:13px;margin-bottom:14px">
+                <label>🌸 阶段1 · 初遇夕阳教室 (<code>1792229993067.jpeg</code>): <input type="file" accept="image/*" onchange="loadImg(0,this)"></label>
+                <label>🌟 阶段2 · 星夜露台 / 好结局 (<code>1792230008671.jpeg</code>): <input type="file" accept="image/*" onchange="loadImg(1,this)"></label>
+                <label>⚙️ 阶段3 · 时间凝滞齿轮 (<code>1792230022396.jpeg</code>): <input type="file" accept="image/*" onchange="loadImg(2,this)"></label>
+                <label>🩸 阶段4 · 彼岸深渊 / 坏结局 (<code>1792230036504.jpeg</code>): <input type="file" accept="image/*" onchange="loadImg(3,this)"></label>
+            </div>
+            <button class="cbtn" style="width:100%;background:linear-gradient(180deg,#8c5218,#542e09);color:#fff;border-color:#3d2104" onclick="exportSingleHTML()">
+                💾 立即下载独立游戏网页文件 (xixi-galgame.html)
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+/********************************************************************
+ * 1. 默认四阶段 CG 路径（支持同目录直接读取，或通过上方按钮打包内嵌）
+ ********************************************************************/
+const CGS = [
+    "1792229993067.jpeg", // 0: 日常初遇（夕阳教室）
+    "1792230008671.jpeg", // 1: 欢喜星夜（露台喜极而泣 / GOOD END）
+    "1792230022396.jpeg", // 2: 时间凝滞（时钟齿轮冷漠凝视）
+    "1792230036504.jpeg"  // 3: 彼岸深渊（碎裂怀表病娇伸手 / BAD END）
+];
+
+/********************************************************************
+ * 2. 扩充版五幕 Galgame 剧本（每幕含多句铺垫剧情 + 核心抉择 + 分支回应）
+ ********************************************************************/
+const CHAPTERS = [
+    {
+        tag: "第一幕 · 放学后的琥珀夕阳",
+        lines: [
+            { speaker: "旁白", text: "放学后的钟声早已远去，斜阳穿过教室的玻璃窗，将飞舞的粉笔灰与樱花瓣染成温暖的琥珀色。" },
+            { speaker: "熙熙", text: "『终于只剩下我们两个人了呢……刚才上课的时候，我可是一直都在偷偷看你的侧脸哦。』" },
+            { speaker: "熙熙", text: "『呐，趁着夕阳还没有落山，现在看着我的眼睛，认真回答我——你喜不喜欢熙熙？』" }
+        ],
+        yesBtn: "喜欢熙熙",
+        noBtn: "不喜欢",
+        sweetReply: "『太好了……！听到你毫不犹豫地这么说，我的心跳快得像是要从胸口跳出来了呢 ♡』"
+    },
+    {
+        tag: "第二幕 · 暮雨与倾斜的伞檐",
+        lines: [
+            { speaker: "旁白", text: "傍晚的云层忽然落下细密春雨，走廊外水雾弥漫，空气里满是潮湿而清甜的栀子花香。" },
+            { speaker: "熙熙", text: "『糟糕，我今天故意没有带伞呢……这样一来，你就名正言顺地不能丢下我一个人走了吧？』" },
+            { speaker: "熙熙", text: "『如果这把伞很小很小，你会不会把伞柄往我这边倾斜，哪怕淋湿自己的肩膀也要护着熙熙？』" }
+        ],
+        yesBtn: "把伞都倾向你",
+        noBtn: "各走各的吧",
+        sweetReply: "『笨蛋，要是你感冒了我会心疼的呀……所以我只要紧紧贴在你的怀里，就谁都不会淋湿啦 ♡』"
+    },
+    {
+        tag: "第三幕 · 停摆的黄铜怀表",
+        lines: [
+            { speaker: "旁白", text: "课桌上放着一枚古老的黄铜怀表，秒针在暮色中发出轻微的咔哒声，仿佛随时都会停滞。" },
+            { speaker: "熙熙", text: "『有时候我会想，如果快乐的时光总是流逝得那么快，不如干脆把全世界的钟表都弄坏好了。』" },
+            { speaker: "熙熙", text: "『要是有一天时间真的停在这一秒，窗外的一切都静止不动……你也会永远只看着熙熙一个人吗？』" }
+        ],
+        yesBtn: "永远只看着你",
+        noBtn: "那太可怕了",
+        sweetReply: "『只要你的瞳孔里倒映着我的影子，时间走或者不走，对熙熙来说都已经是永恒了呢。』"
+    },
+    {
+        tag: "第四幕 · 藏匿的独占欲",
+        lines: [
+            { speaker: "旁白", text: "夜幕悄然降临，星光顺着窗棂爬上她的发梢，她轻轻向前迈了一步，指尖勾住你的衣袖。" },
+            { speaker: "熙熙", text: "『其实啊，熙熙并不是什么乖巧懂事的女孩子……看到你和别人说话，我也会在心里悄悄记下一百遍。』" },
+            { speaker: "熙熙", text: "『把你的置顶、你的周末、你未来每一个醒来的清晨都交给我保管，连哪怕一秒钟都不分给别人，好不好？』" }
+        ],
+        yesBtn: "全部交给你保管",
+        noBtn: "想要一点自由",
+        sweetReply: "『嘿嘿，我就知道你会宠着我的小自私……那从现在起，你身上已经盖满熙熙的专属印章咯 ♡』"
+    },
+    {
+        tag: "终幕 · 世界线收束的誓约",
+        lines: [
+            { speaker: "旁白", text: "漫天星河与飘落的花瓣在晚风中交汇，世界线的变动率在此刻逐渐收束向唯一的终点。" },
+            { speaker: "熙熙", text: "『走到这里，你已经没有退路了哦。不管是温柔的我，还是偶尔偏执到想把你锁起来的我……』" },
+            { speaker: "熙熙", text: "『最后一个问题——跨越无数次轮回与观测，你愿意和熙熙许下永不背叛的契约吗？』" }
+        ],
+        yesBtn: "许下永恒契约 ♡",
+        noBtn: "我再考虑一下",
+        sweetReply: "『契约成立 ♡ 无论顺境、逆境还是时间的尽头，我们都再也不会分开了！』"
+    }
+];
+
+// 点击“不喜欢”时的递进恐怖台词
+const HORROR_REPLIES = [
+    "『……咦？刚才风有点大，熙熙好像听错了。怀表的齿轮怎么卡住了一下……你再重新选一次好不好？』",
+    "『为什么手指还要往右边移呢？你看，窗外的时间已经开始倒流了哦……别逼我把那个选项删掉。』",
+    "『咔嚓——表盘碎掉了呢。你的眼睛为什么在看别处？明明整个世界里只要点【喜欢熙熙】就够了呀 ♡』",
+    "『抓到你发抖的手腕了 ♡ 彼岸花都已经为你盛开了，那个讨厌的按钮马上就要被我碾碎咯！』",
+    "『不许逃不许逃不许逃！时间线已经被我锁死了，睁大眼睛看清楚，现在你只剩下唯一的选择了 ♡♡』"
+];
+
+// 摸摸头互动随机反应
+const PAT_REACTIONS_NORMAL = [
+    "『唔……！突然摸头的话，发型都要乱掉啦……不过如果是你的手，再多摸一会儿也可以哦 ♡』",
+    "『嘿嘿，手心好暖和呀……像小猫一样蹭蹭你的掌心~』",
+    "『再摸下去的话，熙熙今天晚上就要赖着不让你回家了哦 ♡』",
+    "『心跳加速中……检测到你对熙熙的偏爱值正在大幅上升！』"
+];
+
+const PAT_REACTIONS_HORROR = [
+    "『这时候才想起来哄我吗？晚了哦……这只手我就不客气地永远握住了 ♡』",
+    "『好温柔的温度呀……真想把你的手指留在我的发丝间，一辈子都不放开呢 ♡』"
+];
+
+const HAUNT_PHRASES = [
+    "为什么不选我？", "时间已经锁死了", "只看着熙熙", "不允许拒绝",
+    "喜欢喜欢喜欢喜欢", "CAUSALITY_ERR_666", "逃不掉的 ♡", "再选一次吧", "你的未来是我的"
+];
+
+/********************************************************************
+ * 3. 游戏核心状态管理
+ ********************************************************************/
+let chapIdx = 0;
+let lineIdx = 0;
+let phase = 'TITLE'; // 'TITLE' | 'DIALOGUE' | 'CHOICE' | 'SWEET_REPLY' | 'ENDING'
+let noCount = 0;         // 当前幕点击不喜欢次数
+let totalNoClicks = 0;   // 全局点击不喜欢总次数（决定好坏结局）
+let affection = 100;     // 羁绊好感度
+let currentCgIndex = 0;
+let muted = false;
+let typer = null;
+let isTyping = false;
+let currentFullText = '';
+let logs = [];
+let unlockedEndings = { good: false, bad: false };
+let hauntTimer = null;
+
+const stage = document.getElementById('stage');
+const bgCg = document.getElementById('bg-cg');
+const charNameEl = document.getElementById('char-name');
+const chapterTagEl = document.getElementById('chapter-tag');
+const dlgTextEl = document.getElementById('dlg-text');
+const dlgHintEl = document.getElementById('dlg-hint');
+const dlgWrap = document.getElementById('dlg-wrap');
+const choicesEl = document.getElementById('choices');
+const btnYes = document.getElementById('btn-yes');
+const btnNo = document.getElementById('btn-no');
+const timePill = document.getElementById('time-pill');
+const lovePill = document.getElementById('love-pill');
+const corruptPill = document.getElementById('corrupt-pill');
+const hauntLayer = document.getElementById('haunt-layer');
+
+/********************************************************************
+ * 4. Web Audio API 音乐盒与电子恐怖音效合成器
+ ********************************************************************/
+let actx = null;
+function ensureAudio() {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+}
+
+function playSound(type) {
+    if (muted) return;
+    ensureAudio();
+    const now = actx.currentTime;
+    if (type === 'yes') {
+        [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => {
+            const o = actx.createOscillator(), g = actx.createGain();
+            o.type = 'triangle';
+            o.frequency.setValueAtTime(f, now + i * 0.065);
+            g.gain.setValueAtTime(0.09, now + i * 0.065);
+            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.065 + 0.55);
+            o.connect(g); g.connect(actx.destination);
+            o.start(now + i * 0.065); o.stop(now + i * 0.065 + 0.55);
+        });
+    } else if (type === 'pat') {
+        [659.25, 880, 1174.66].forEach((f, i) => {
+            const o = actx.createOscillator(), g = actx.createGain();
+            o.type = 'sine';
+            o.frequency.setValueAtTime(f, now + i * 0.05);
+            g.gain.setValueAtTime(0.07, now + i * 0.05);
+            g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.35);
+            o.connect(g); g.connect(actx.destination);
+            o.start(now + i * 0.05); o.stop(now + i * 0.05 + 0.35);
+        });
+    } else if (type === 'no') {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = 'sawtooth';
+        o.frequency.setValueAtTime(Math.max(48, 130 - noCount * 15), now);
+        o.frequency.linearRampToValueAtTime(42, now + 0.38);
+        g.gain.setValueAtTime(0.16, now);
+        g.gain.exponentialRampToValueAtTime(0.003, now + 0.42);
+        o.connect(g); g.connect(actx.destination);
+        o.start(now); o.stop(now + 0.42);
+    } else if (type === 'tick') {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = noCount >= 2 ? 'sawtooth' : 'sine';
+        o.frequency.setValueAtTime(noCount >= 2 ? 220 : 820, now);
+        g.gain.setValueAtTime(0.015, now);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 0.025);
+        o.connect(g); g.connect(actx.destination);
+        o.start(now); o.stop(now + 0.03);
+    }
+}
+
+/********************************************************************
+ * 5. 底层保底场景绘制 & 樱花/星光/彼岸花粒子系统
+ ********************************************************************/
+const fbCanvas = document.getElementById('fallback-canvas');
+const fbCtx = fbCanvas.getContext('2d');
+const ptCanvas = document.getElementById('particle-canvas');
+const ptCtx = ptCanvas.getContext('2d');
+let particles = [];
+
+function resizeCanvases() {
+    fbCanvas.width = stage.clientWidth || 1280;
+    fbCanvas.height = stage.clientHeight || 720;
+    ptCanvas.width = fbCanvas.width;
+    ptCanvas.height = fbCanvas.height;
+}
+window.addEventListener('resize', resizeCanvases);
+resizeCanvases();
+
+for (let i = 0; i < 38; i++) {
+    particles.push({
+        x: Math.random() * 1280,
+        y: Math.random() * 720,
+        r: Math.random() * 4 + 2,
+        vx: (Math.random() - 0.3) * 0.9,
+        vy: Math.random() * 0.8 + 0.4,
+        ang: Math.random() * Math.PI * 2,
+        va: (Math.random() - 0.5) * 0.03
+    });
+}
+
+function drawFallbackAndParticles() {
+    const w = fbCanvas.width, h = fbCanvas.height;
+    // 保底渐变背景（当本地4张图片未加载时同样展现唯美氛围）
+    const grad = fbCtx.createLinearGradient(0, 0, 0, h);
+    if (currentCgIndex === 0) {
+        grad.addColorStop(0, '#4a2535'); grad.addColorStop(0.55, '#8c4646'); grad.addColorStop(1, '#2b1620');
+    } else if (currentCgIndex === 1) {
+        grad.addColorStop(0, '#0f1738'); grad.addColorStop(0.55, '#2b2450'); grad.addColorStop(1, '#140f26');
+    } else if (currentCgIndex === 2) {
+        grad.addColorStop(0, '#1f2029'); grad.addColorStop(0.55, '#32303d'); grad.addColorStop(1, '#121117');
+    } else {
+        grad.addColorStop(0, '#36000a'); grad.addColorStop(0.55, '#1a0004'); grad.addColorStop(1, '#050001');
+    }
+    fbCtx.fillStyle = grad;
+    fbCtx.fillRect(0, 0, w, h);
+
+    // 绘制前景飘落粒子
+    ptCtx.clearRect(0, 0, w, h);
+    particles.forEach(p => {
+        const dir = noCount >= 1 && noCount <= 2 ? -1.4 : (noCount >= 3 ? 2.2 : 1);
+        p.x += p.vx * dir;
+        p.y += p.vy * dir;
+        p.ang += p.va;
+        if (p.y > h + 15) p.y = -10;
+        if (p.y < -15) p.y = h + 10;
+        if (p.x > w + 15) p.x = -10;
+        if (p.x < -15) p.x = w + 10;
+
+        ptCtx.save();
+        ptCtx.translate(p.x, p.y);
+        ptCtx.rotate(p.ang);
+        if (currentCgIndex === 3 || noCount >= 3) {
+            ptCtx.fillStyle = 'rgba(255, 15, 55, 0.78)';
+            ptCtx.shadowColor = '#ff0033';
+            ptCtx.shadowBlur = 8;
+        } else if (currentCgIndex === 1) {
+            ptCtx.fillStyle = 'rgba(255, 236, 175, 0.82)';
+            ptCtx.shadowColor = '#ffe49e';
+            ptCtx.shadowBlur = 6;
+        } else {
+            ptCtx.fillStyle = 'rgba(255, 205, 218, 0.78)';
+        }
+        ptCtx.beginPath();
+        ptCtx.ellipse(0, 0, p.r * 1.4, p.r * 0.75, 0, 0, Math.PI * 2);
+        ptCtx.fill();
+        ptCtx.restore();
+    });
+    requestAnimationFrame(drawFallbackAndParticles);
+}
+drawFallbackAndParticles();
+
+/********************************************************************
+ * 6. CG 切换与打字机引擎
+ ********************************************************************/
+function setCG(idx) {
+    currentCgIndex = idx;
+    const targetSrc = CGS[idx];
+    if (bgCg.getAttribute('src') !== targetSrc) {
+        bgCg.style.opacity = '0.28';
+        setTimeout(() => {
+            bgCg.src = targetSrc;
+            bgCg.style.opacity = '1';
+        }, 140);
+    } else {
+        bgCg.style.opacity = '1';
+    }
+}
+
+function updateStatusHUD() {
+    lovePill.textContent = `♥ 羁绊 ${affection}%`;
+    corruptPill.textContent = `👁 侵蚀 ${totalNoClicks}`;
+    document.getElementById('end-unlock-count').textContent =
+        `已解锁 ${(unlockedEndings.good ? 1 : 0) + (unlockedEndings.bad ? 1 : 0)} / 2`;
+}
+
+function typeWrite(speaker, text) {
+    clearInterval(typer);
+    charNameEl.textContent = speaker;
+    currentFullText = text;
+    dlgTextEl.textContent = '';
+    isTyping = true;
+    let i = 0;
+    typer = setInterval(() => {
+        dlgTextEl.textContent += text.charAt(i);
+        if (i % 2 === 0) playSound('tick');
+        i++;
+        if (i >= text.length) {
+            clearInterval(typer);
+            isTyping = false;
+        }
+    }, 26);
+}
+
+/********************************************************************
+ * 7. 章节流程与分支抉择控制
+ ********************************************************************/
+function showStartScreen() {
+    phase = 'TITLE';
+    noCount = 0;
+    stopHauntWords();
+    stage.className = '';
+    document.getElementById('fx-scan').style.opacity = '0';
+    document.getElementById('ending-card').style.display = 'none';
+    choicesEl.style.display = 'none';
+    setCG(0);
+    document.getElementById('start-screen').style.display = 'flex';
+    updateStatusHUD();
+}
+
+function startNewGame() {
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('ending-card').style.display = 'none';
+    dlgWrap.classList.remove('collapsed');
+    document.getElementById('toggle-ui').textContent = '▼ 收起对话';
+    chapIdx = 0;
+    lineIdx = 0;
+    noCount = 0;
+    totalNoClicks = 0;
+    affection = 100;
+    logs = [];
+    updateStatusHUD();
+    loadCurrentScene();
+}
+
+function loadCurrentScene() {
+    stopHauntWords();
+    noCount = 0;
+    stage.className = '';
+    document.getElementById('fx-scan').style.opacity = '0';
+    document.getElementById('fx-vignette').style.background =
+        'radial-gradient(circle at 50% 45%, transparent 50%, rgba(12, 6, 10, 0.55) 100%)';
+
+    const chap = CHAPTERS[chapIdx];
+    chapterTagEl.textContent = chap.tag;
+    setCG(0);
+
+    const lineObj = chap.lines[lineIdx];
+    typeWrite(lineObj.speaker, lineObj.text);
+
+    // 如果是该幕最后一句，弹出【喜欢 / 不喜欢】抉择按钮
+    if (lineIdx === chap.lines.length - 1) {
+        phase = 'CHOICE';
+        dlgHintEl.textContent = '◆ 请在画面中央做出你的抉择';
+        btnYes.textContent = chap.yesBtn;
+        btnNo.textContent = chap.noBtn;
+        btnYes.style.transform = 'scale(1)';
+        btnNo.style.transform = 'translate(0,0) scale(1)';
+        btnNo.style.opacity = '1';
+        btnNo.style.display = 'inline-block';
+        choicesEl.style.display = 'flex';
+    } else {
+        phase = 'DIALOGUE';
+        dlgHintEl.textContent = '▼ 点击对话框继续剧情';
+        choicesEl.style.display = 'none';
+    }
+}
+
+function onDlgClick() {
+    if (isTyping) {
+        clearInterval(typer);
+        dlgTextEl.textContent = currentFullText;
+        isTyping = false;
+        return;
+    }
+    advanceDialogue();
+}
+
+function advanceDialogue() {
+    if (phase === 'DIALOGUE') {
+        lineIdx++;
+        loadCurrentScene();
+    } else if (phase === 'SWEET_REPLY') {
+        if (chapIdx < CHAPTERS.length - 1) {
+            chapIdx++;
+            lineIdx = 0;
+            loadCurrentScene();
+        } else {
+            // 全部5幕完成，根据总侵蚀度判定好结局或坏结局
+            if (totalNoClicks >= 3) {
+                triggerEnding('BAD');
+            } else {
+                triggerEnding('GOOD');
+            }
+        }
+    }
+}
+
+function prevScene() {
+    if (phase === 'TITLE' || phase === 'ENDING') return;
+    if (lineIdx > 0) {
+        lineIdx--;
+        loadCurrentScene();
+    } else if (chapIdx > 0) {
+        chapIdx--;
+        lineIdx = 0;
+        loadCurrentScene();
+    }
+}
+
+/********************************************************************
+ * 8. 【喜欢】与【不喜欢】按钮交互 & 电子恐怖异变
+ ********************************************************************/
+function chooseYes() {
+    playSound('yes');
+    stopHauntWords();
+    noCount = 0;
+    affection += 15;
+    updateStatusHUD();
+
+    stage.className = '';
+    document.getElementById('fx-scan').style.opacity = '0';
+    document.getElementById('fx-vignette').style.background =
+        'radial-gradient(circle, transparent 55%, rgba(255, 185, 208, 0.38) 100%)';
+
+    setCG(1); // 切换到第2张：星夜露台喜极而泣 CG
+    choicesEl.style.display = 'none';
+    phase = 'SWEET_REPLY';
+    dlgHintEl.textContent = '▼ 点击对话框进入下一幕';
+
+    const chap = CHAPTERS[chapIdx];
+    logs.push(`【${chap.tag}】你选择了「${chap.yesBtn}」 → ${chap.sweetReply}`);
+    typeWrite('熙熙', chap.sweetReply);
+}
+
+function chooseNo() {
+    noCount++;
+    totalNoClicks++;
+    affection = Math.min(999, affection + 22);
+    updateStatusHUD();
+    playSound('no');
+
+    // 如果单幕连续点击6次“不喜欢”，直接触发病娇世界线坍缩坏结局
+    if (noCount >= 6) {
+        triggerEnding('BAD');
+        return;
+    }
+
+    // 喜欢按钮不断膨胀放大，把不喜欢挤扁挤走
+    const yesScale = 1 + noCount * 0.34;
+    const noScale = Math.max(0.18, 1 - noCount * 0.19);
+    const offsetX = (noCount % 2 === 0 ? 1 : -1) * (18 + noCount * 14);
+    const offsetY = (Math.random() - 0.5) * 24;
+
+    btnYes.style.transform = `scale(${yesScale})`;
+    btnNo.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${noScale})`;
+    btnNo.style.opacity = String(Math.max(0.2, 1 - noCount * 0.18));
+
+    const noLabels = ["手滑了？", "再想想", "不许点", "点左边←", "喜欢熙熙"];
+    btnNo.textContent = noLabels[Math.min(noCount - 1, noLabels.length - 1)];
+
+    if (noCount >= 5) {
+        btnNo.style.display = 'none';
+        btnYes.textContent = '永远只喜欢熙熙 ♡';
+    }
+
+    if (noCount <= 2) {
+        setCG(2); // 阶段3：时间齿轮冷漠凝视 CG
+        stage.className = 'horror-1 shake-light';
+        document.getElementById('fx-scan').style.opacity = '0.45';
+        document.getElementById('fx-vignette').style.background =
+            'radial-gradient(circle, transparent 35%, rgba(12, 5, 18, 0.82) 100%)';
+    } else {
+        setCG(3); // 阶段4：彼岸花碎裂怀表病娇伸手 CG
+        stage.className = 'horror-2 shake-hard';
+        document.getElementById('fx-scan').style.opacity = '0.88';
+        document.getElementById('fx-vignette').style.background =
+            'radial-gradient(circle, transparent 22%, rgba(85, 0, 14, 0.9) 100%)';
+        startHauntWords();
+    }
+
+    const msg = HORROR_REPLIES[Math.min(noCount - 1, HORROR_REPLIES.length - 1)];
+    logs.push(`⚠️ 异常分支 [侵蚀 #${totalNoClicks}]：${msg}`);
+    typeWrite('熙熙', msg);
+}
+
+function startHauntWords() {
+    if (hauntTimer) return;
+    hauntTimer = setInterval(() => {
+        const w = document.createElement('div');
+        w.className = 'haunt-word';
+        w.textContent = HAUNT_PHRASES[Math.floor(Math.random() * HAUNT_PHRASES.length)];
+        w.style.left = (Math.random() * 74 + 8) + '%';
+        w.style.top = (Math.random() * 68 + 10) + '%';
+        w.style.fontSize = (Math.random() * 12 + 16) + 'px';
+        hauntLayer.appendChild(w);
+        setTimeout(() => w.remove(), 2400);
+    }, 320);
+}
+
+function stopHauntWords() {
+    clearInterval(hauntTimer);
+    hauntTimer = null;
+    hauntLayer.innerHTML = '';
+}
+
+/********************************************************************
+ * 9. 好玩功能：点击摸摸头互动 (Headpat)
+ ********************************************************************/
+function patXixi(e) {
+    if (phase === 'TITLE') return;
+    playSound('pat');
+    affection += 5;
+    updateStatusHUD();
+
+    // 在点击位置生成飘起的小爱心
+    const rect = stage.getBoundingClientRect();
+    const x = e && e.clientX ? e.clientX - rect.left : rect.width * 0.5;
+    const y = e && e.clientY ? e.clientY - rect.top : rect.height * 0.32;
+
+    for (let i = 0; i < 3; i++) {
+        const h = document.createElement('div');
+        h.className = 'float-heart';
+        h.textContent = noCount >= 2 ? '🩸♡' : '💗';
+        h.style.left = (x + (Math.random() - 0.5) * 50) + 'px';
+        h.style.top = (y + (Math.random() - 0.5) * 30) + 'px';
+        stage.appendChild(h);
+        setTimeout(() => h.remove(), 1200);
+    }
+
+    const pool = noCount >= 2 ? PAT_REACTIONS_HORROR : PAT_REACTIONS_NORMAL;
+    const line = pool[Math.floor(Math.random() * pool.length)];
+    typeWrite('熙熙 (摸摸头互动 ♡)', line);
+}
+
+/********************************************************************
+ * 10. 双结局系统：好结局 (GOOD END) 与 坏结局 (BAD END)
+ ********************************************************************/
+function triggerEnding(type) {
+    phase = 'ENDING';
+    choicesEl.style.display = 'none';
+    const card = document.getElementById('ending-card');
+    const titleEl = document.getElementById('end-title');
+    const descEl = document.getElementById('end-desc');
+    const statsEl = document.getElementById('end-stats');
+    const badgeEl = document.getElementById('end-badge');
+
+    if (type === 'GOOD') {
+        unlockedEndings.good = true;
+        stopHauntWords();
+        stage.className = '';
+        document.getElementById('fx-scan').style.opacity = '0';
+        setCG(1); // 星夜露台喜极而泣 CG
+        playSound('yes');
+
+        card.className = '';
+        badgeEl.textContent = '🌟 TRUE GOOD ENDING // 纯白星河世界线';
+        titleEl.textContent = '【好结局】星河下的永恒初恋';
+        descEl.textContent = '你用最纯粹的偏爱回应了熙熙所有的不安。在这个星光与樱花交织的夜晚，她含着幸福的泪水与你十指紧扣，走向漫长而温柔的岁月中。';
+        chapterTagEl.textContent = 'GOOD END · 星河下的永恒初恋';
+        typeWrite('熙熙', '『谢谢你没有推开我……从今往后的每一个春夏秋冬，熙熙都会一直陪在你身边哦 ♡』');
+    } else {
+        unlockedEndings.bad = true;
+        noCount = 4;
+        setCG(3); // 彼岸花与碎裂怀表病娇 CG
+        stage.className = 'horror-2 shake-light';
+        document.getElementById('fx-scan').style.opacity = '0.78';
+        startHauntWords();
+        playSound('no');
+
+        card.className = 'bad-card';
+        badgeEl.textContent = '🩸 YANDERE BAD ENDING // 时间坍缩世界线';
+        titleEl.textContent = '【坏结局】彼岸花开的永劫囚笼';
+        descEl.textContent = '由于你多次试图违逆心意，怀表的指针彻底崩碎。彼岸花在暗红的虚空中盛放，熙熙带着令人战栗的甜美微笑，将你永远锁在了只有彼此的静止时空里。';
+        chapterTagEl.textContent = 'BAD END · 彼岸花开的永劫囚笼';
+        typeWrite('熙熙', '『抓到你了哦 ♡ 既然你总是想逃跑，那我就把时间永远停在这一秒，这样你就永远只能属于熙熙了 ♡♡』');
+    }
+
+    statsEl.textContent = `观测统计：羁绊值 ${affection}% ｜ 累计点击「不喜欢」 ${totalNoClicks} 次`;
+    dlgHintEl.textContent = '★ 结局已收录至档案馆';
+    card.style.display = 'flex';
+    updateStatusHUD();
+}
+
+/********************************************************************
+ * 11. 辅助功能：对话框折叠、LOG履历、结局档案馆、免代码一键下载HTML
+ ********************************************************************/
+function toggleDlg() {
+    const c = dlgWrap.classList.toggle('collapsed');
+    document.getElementById('toggle-ui').textContent = c ? '▲ 展开对话' : '▼ 收起对话';
+}
+
+function toggleAudio() {
+    muted = !muted;
+    document.getElementById('mute-btn').textContent = muted ? '🔇' : '🔊';
+}
+
+function openLog() {
+    const box = document.getElementById('log-list');
+    if (noCount >= 3) {
+        box.innerHTML = '<p style="color:#c9002b;font-weight:bold;margin-bottom:6px">【认知覆写已完成】只喜欢熙熙 ♡ 只喜欢熙熙 ♡ 只喜欢熙熙 ♡</p>'.repeat(7);
+    } else if (logs.length === 0) {
+        box.innerHTML = '<p>当前世界线暂无抉择记录。</p>';
+    } else {
+        box.innerHTML = logs.map(l => `<p style="margin-bottom:8px;border-bottom:1px dashed #d8c098;padding-bottom:4px">${l}</p>`).join('');
+    }
+    document.getElementById('log-modal').style.display = 'flex';
+}
+
+function openEndingsModal() {
+    const grid = document.getElementById('endings-grid');
+    grid.innerHTML = `
+        <div style="padding:12px;border-radius:8px;border:1.5px solid ${unlockedEndings.good ? '#b8860b' : '#ccc'};background:${unlockedEndings.good ? '#fff6e0' : '#f2ece1'}">
+            <b>🌟 GOOD END · 星河下的永恒初恋</b>
+            <span style="float:right;color:${unlockedEndings.good ? '#1f7a3a' : '#888'}">${unlockedEndings.good ? '✓ 已解锁' : '🔒 未解锁'}</span>
+            <p style="font-size:13px;margin-top:6px;color:#553818">达成条件：完成全部五幕剧情，且累计点击「不喜欢」不超过 2 次。</p>
+        </div>
+        <div style="padding:12px;border-radius:8px;border:1.5px solid ${unlockedEndings.bad ? '#c9002b' : '#ccc'};background:${unlockedEndings.bad ? '#ffe8ec' : '#f2ece1'}">
+            <b>🩸 BAD END · 彼岸花开的永劫囚笼</b>
+            <span style="float:right;color:${unlockedEndings.bad ? '#c9002b' : '#888'}">${unlockedEndings.bad ? '✓ 已解锁' : '🔒 未解锁'}</span>
+            <p style="font-size:13px;margin-top:6px;color:#553818">达成条件：在单幕中连续点击 6 次「不喜欢」，或累计点击「不喜欢」达到 3 次以上通关。</p>
+        </div>
+    `;
+    document.getElementById('endings-modal').style.display = 'flex';
+}
+
+function openPacker() {
+    document.getElementById('pack-modal').style.display = 'flex';
+}
+
+function loadImg(idx, input) {
+    const f = input.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = e => {
+        CGS[idx] = e.target.result;
+        if (idx === currentCgIndex) setCG(idx);
+    };
+    r.readAsDataURL(f);
+}
+
+function exportSingleHTML() {
+    let html = document.documentElement.outerHTML;
+    html = html.replace(/const CGS = \[[\s\S]*?\];/, `const CGS = ${JSON.stringify(CGS)};`);
+    const blob = new Blob(['<!DOCTYPE html>\n' + html], { type: 'text/html;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'xixi-galgame.html';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+}
+
+// 顶部精密时间感知计时器（正常读秒 -> 时间倒流 -> 乱码锁死）
+let ticks = 0;
+setInterval(() => {
+    ticks += noCount === 0 ? 4 : (noCount <= 2 ? -9 : 117);
+    const t = Math.abs(ticks / 100).toFixed(2).padStart(6, '0');
+    if (noCount === 0) {
+        timePill.textContent = `WORLDLINE 1.048596 | ${t}s`;
+    } else if (noCount <= 2) {
+        timePill.textContent = `REWIND 0.337187 | -${t}s`;
+    } else {
+        timePill.textContent = `LOCKED::0x666 | 66:66.66`;
+    }
+}, 40);
+</script>
+</body>
+</html>
